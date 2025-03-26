@@ -1,1 +1,2027 @@
+--CREATE A DATABASE OF DATAWARE HOUSE
+create database Datawarehouse;
+
+--USE THE DATAWARE HOUSE
+use Datawarehouse;
+
+--CREATE A SCHEMA OF BRONZE
+create schema Bronze;
+go
+--CREATE A SCHEMA OF SILVER
+create schema Silver;
+go
+--CREATE A SCHEMA GOLD
+create schema Gold;
+go
+
+--create a bronze table
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION 
+if OBJECT_ID ('bronze.crm_cust_info','U') is not null
+	drop table bronze.crm_cust_info;
+--CREATES A TABLE 
+create table bronze.crm_cust_info (
+	cst_id int,
+	cst_key nvarchar(50),
+	cst_firstname nvarchar(50),
+	cst_lastname nvarchar(50),
+	cst_marital_status nvarchar(10),
+	cst_gndr nvarchar(10),
+	cst_create_date date
+);
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if OBJECT_ID ('bronze.crm_prd_info','U') is not null
+	drop table bronze.crm_prd_info;
+--CREATE A TABLE
+create table bronze.crm_prd_info (
+	prd_id int,
+	prd_key nvarchar(50),
+	prd_nm nvarchar(50),
+	prd_cost int,
+	prd_line nvarchar(50),
+	prd_start_dt datetime,
+	prd_end_dt datetime
+);
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if OBJECT_ID ('bronze.crm_sales_details','U') is not null
+	drop table bronze.crm_sales_details;
+--CREATES A TABLE
+create table bronze.crm_sales_details (
+	sls_ord_num nvarchar(50),
+	sls_prd_key nvarchar(50),
+	sls_cust_id int,
+	sls_order_dt int,
+	sls_ship_dt int,
+	sls_due_dt int,
+	sls_sales int,
+	sls_quantity int,
+	sls_price int
+);
+
+--create table erp data
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if object_id ('bronze.erp_loc_a101','U') is not null
+	drop table bronze.erp_loc_a101;
+--CREATES A TABLE
+create table bronze.erp_loc_a101 (
+	cid nvarchar(50),
+	cntry nvarchar(50)
+);
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if object_id ('bronze.erp_cust_az12','U') is not null
+	drop table bronze.erp_cust_az12;
+--CREATES A TABLE
+create table bronze.erp_cust_az12 (
+	cid nvarchar(50),
+	bdate date,
+	gen nvarchar(50)
+);
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if object_id ('bronze.erp_px_cat_g1v2','U') is not null
+	drop table bronze.erp_px_cat_g1v2;
+--CREATES A TABLE
+create table bronze.erp_px_cat_g1v2 (
+	id nvarchar(50),
+	cat nvarchar(50),
+	subcat nvarchar(50),
+	maintainence nvarchar(50)
+);
+
+
+--CREATING A STORED PROCEDURES
+CREATE OR ALTER PROCEDURE BRONZE.LOAD_BRONZE AS
+BEGIN
+	DECLARE @start_time DATETIME, @end_time DATETIME,@batch_start_time DATETIME, @batch_end_time DATETIME;
+	BEGIN TRY
+		--truncate the table  which remains the structure
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		--BATCH TIME FORMATION
+		SET @batch_start_time = GETDATE();
+		print'=========================================================================';
+		print'Loading Bronze Layer';
+		print'=========================================================================';
+
+		print '------------------------------------------------------------------------';
+		print 'Loading CRM Table';
+		print '------------------------------------------------------------------------';
+
+		set @start_time = GETDATE();
+		print '>>Truncating Table: bronze.crm_cust_info' 
+		--truncate the table  which remains the structure
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		truncate table [Bronze].[crm_cust_info];
+
+		--bulk insert of data
+		print '>>Bulk Inserting data: bronze.crm_cust_info'
+		bulk insert [Bronze].[crm_cust_info]
+		from 'C:\Users\MSVPraveenPallapothu\sql\dwh_project\source_crm\cust_info.csv'
+		with (
+		firstrow = 2,    --FROM 2ND ROW IT STARTS
+		fieldterminator = ',',
+		tablock
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		set @start_time = GETDATE();
+		print '>>Truncating Table: bronze.crm_prd_info'
+		--truncate the table  which remains the structure
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		truncate table [Bronze].[crm_prd_info];
+
+
+		--bulk insert of [crm_prd_info]
+		print '>>Bulk Inserting data: bronze.crm_prd_info'
+		bulk insert [Bronze].[crm_prd_info]
+		from 'C:\Users\MSVPraveenPallapothu\sql\dwh_project\source_crm\prd_info.csv'
+		with (
+		firstrow = 2,		--ROW STARTS FROM 2ND
+		fieldterminator = ',',
+		tablock
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		set @start_time = GETDATE();
+		print '>>Truncating Table: bronze.crm_sales_details'
+		--truncate the table  [Bronze].[crm_sales_details]
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		truncate table  [Bronze].[crm_sales_details]
+
+		--bulk insert of [Bronze].[crm_sales_details]
+		print '>>Bulk Inserting data: bronze.crm_sales_details'
+		bulk insert [Bronze].[crm_sales_details]
+		from 'C:\Users\MSVPraveenPallapothu\sql\dwh_project\source_crm\sales_details.csv'
+		with (
+		firstrow = 2,		--ROW STARTS FROM 2ND
+		fieldterminator = ',',
+		tablock
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+
+
+		print '------------------------------------------------------------------------';
+		print 'Loading ERP Table';
+		print '------------------------------------------------------------------------';
+		--ERP
+		set @start_time = GETDATE();
+		print '>>Truncating Table: bronze.erp_cust_AZ12'
+		--truncate the table  [Bronze].[erp_cust_az12]
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		truncate table [Bronze].[erp_cust_az12]
+
+		print '>>Bulk Inserting data: bronze.erp_cust_AZ12'
+		--bulk insert of [Bronze].[erp_cust_az12]
+		bulk insert [Bronze].[erp_cust_az12]
+		from 'C:\Users\MSVPraveenPallapothu\sql\dwh_project\source_erp\CUST_AZ12.csv'
+		with (
+		firstrow = 2,			--ROW STARTS FROM 2ND
+		fieldterminator = ',',
+		tablock
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		set @start_time = GETDATE();
+		print '>>Truncating Table: bronze.erp_loc_A101'
+		--truncate the table  [Bronze].[erp_loc_a101]
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		truncate table [Bronze].[erp_loc_a101]
+
+		print '>>Bulk Inserting data: bronze.erp_loc_A101'
+		--bulk insert of [Bronze].[erp_loc_a101]
+		bulk insert [Bronze].[erp_loc_a101]
+		from 'C:\Users\MSVPraveenPallapothu\sql\dwh_project\source_erp\LOC_A101.csv'
+		with (
+		firstrow = 2,       --ROW STARTS FROM 2ND
+		fieldterminator = ',',
+		tablock
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		set @start_time = GETDATE();
+		print '>>Truncating Table: bronze.erp_PX_CAT_G1V2'
+		--truncate the table  [Bronze].[erp_px_cat_g1v2]
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		truncate table [Bronze].[erp_px_cat_g1v2]
+
+		print '>>Bulk Inserting data: bronze.erp_PX_CAT_G1V2'
+		--bulk insert of [Bronze].[erp_px_cat_g1v2]
+		bulk insert [Bronze].[erp_px_cat_g1v2]
+		from 'C:\Users\MSVPraveenPallapothu\sql\dwh_project\source_erp\PX_CAT_G1V2.csv'
+		with (
+		firstrow = 2,   --ROW STARTS FROM 2ND
+		fieldterminator = ',',
+		tablock
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		set @batch_end_time = GETDATE();
+		print '========================================================================================='
+		print 'Loading Bronze Layer is Completed';
+		print '      -Total Load Duration: '+ CAST(DATEDIFF(SECOND, @batch_start_time, @batch_end_time) as nvarchar) + ' seconds'; 
+	END TRY
+	BEGIN CATCH
+		PRINT '=========================================================================================='
+		PRINT 'ERROR OCCURED DURING LOADING BRONZE LAYER '
+		PRINT 'Error Message'+ ERROR_MESSAGE();
+		PRINT 'Error Message'+ CAST (ERROR_NUMBER() AS NVARCHAR);
+		PRINT 'Error Message'+ cast (ERROR_STATE() AS NVARCHAR);
+		PRINT '=========================================================================================='
+	END CATCH
+END;
+
+
+
+select count(*) as 'total' from [Bronze].[crm_cust_info];
+select count(*) as 'total' from [Bronze].[crm_prd_info];
+select count(*) as 'total' from [Bronze].[crm_sales_details];
+select count(*) as 'total' from [Bronze].[erp_cust_az12];
+select count(*) as 'total' from [Bronze].[erp_loc_a101];
+select count(*) as 'total' from [Bronze].[erp_px_cat_g1v2];
+
+--retrieve the data
+select * from [Bronze].[erp_loc_a101];
+--retrieve the data
+select * from [Bronze].[erp_cust_az12];
+--retrieve the data
+select * from [Bronze].[erp_px_cat_g1v2]
+
+
+--EXECUTING STORED PROCEDURES
+EXEC [Bronze].[LOAD_BRONZE];
+
+
+
+
+
+
+
+
+
+
+
+
+--Silver Layer formation. 
+
+--silver layer of Silver.crm_cust_info
+
+if OBJECT_ID ('silver.crm_cust_info','U') is not null
+	drop table silver.crm_cust_info;
+--CREATES A TABLE 
+create table silver.crm_cust_info (
+	cst_id int,
+	cst_key nvarchar(50),
+	cst_firstname nvarchar(50),
+	cst_lastname nvarchar(50),
+	cst_marital_status nvarchar(10),
+	cst_gndr nvarchar(10),
+	cst_create_date date,
+	dwh_create_date Datetime2 default getdate()
+);
+
+
+--silver layer of silver.crm_prd_info
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if OBJECT_ID ('silver.crm_prd_info','U') is not null
+	drop table silver.crm_prd_info;
+--CREATE A TABLE
+create table silver.crm_prd_info (
+	prd_id int,
+	cat_id nvarchar(50),
+	prd_key nvarchar(50),
+	prd_nm nvarchar(50),
+	prd_cost int,
+	prd_line nvarchar(50),
+	prd_start_dt date,
+	prd_end_dt date,
+	dwh_create_date Datetime2 default getdate()
+);
+
+
+--silver layer of silver.crm_sales_details
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if OBJECT_ID ('silver.crm_sales_details','U') is not null
+	drop table silver.crm_sales_details;
+--CREATES A TABLE
+create table silver.crm_sales_details (
+	sls_ord_num nvarchar(50),
+	sls_prd_key nvarchar(50),
+	sls_cust_id int,
+	sls_order_dt int,
+	sls_ship_dt int,
+	sls_due_dt int,
+	sls_sales int,
+	sls_quantity int,
+	sls_price int,
+	dwh_create_date Datetime2 default getdate()
+);
+
+--create table erp data
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+
+
+--silver layer of silver.erp_cust_az12
+
+if object_id ('silver.erp_loc_a101','U') is not null
+	drop table silver.erp_loc_a101;
+--CREATES A TABLE
+create table silver.erp_loc_a101 (
+	cid nvarchar(50),
+	cntry nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+
+--silver layer of silver.erp_loc_a101
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if object_id ('silver.erp_cust_az12','U') is not null
+	drop table silver.erp_cust_az12;
+--CREATES A TABLE
+create table silver.erp_cust_az12 (
+	cid nvarchar(50),
+	bdate date,
+	gen nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+
+--silver layer of silver.erp_px_cat_g1v2
+
+--IF THE DATABASE IS NOT NUL THE IT WILL DELETE THE ENTIRE DATA FROM THE TABLE AND REINSERT THE DATA FROM THE LOCATION
+if object_id ('silver.erp_px_cat_g1v2','U') is not null
+	drop table silver.erp_px_cat_g1v2;
+--CREATES A TABLE
+create table silver.erp_px_cat_g1v2 (
+	id nvarchar(50),
+	cat nvarchar(50),
+	subcat nvarchar(50),
+	maintainence nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+
+
+
+
+-- check For Nulls or Duplicates in Primary Key
+-- Exceptation: No Result
+
+--Bronze.crm_cust_info
+
+SELECT 
+cst_id,count(*) as 'count'
+FROM Bronze.crm_cust_info
+group by cst_id
+having count(*) > 1 and cst_id is not null
+order by cst_id desc;
+
+
+select * from Bronze.crm_cust_info
+where cst_id = 29466
+
+select *,ROW_NUMBER() over(partition by cst_id order by cst_create_date desc) as flag_last from Bronze.crm_cust_info
+where cst_id = 29466;
+
+select * from (
+select *,ROW_NUMBER() over(partition by cst_id order by cst_create_date desc) as flag_last from Bronze.crm_cust_info)t
+where flag_last = 1 and cst_id = 29466;
+
+
+select * from Bronze.crm_cust_info;
+
+select * from (select *,ROW_NUMBER() over(partition by cst_id order by cst_create_date desc) as flag_last from Bronze.crm_cust_info where cst_id is not null)t 
+where flag_last != 1
+
+
+--Unwanted Spaces in the data.
+--Expectation: No Results
+--firstname spaces
+select cst_firstname from Bronze.crm_cust_info
+where cst_firstname != trim(cst_firstname) 
+
+--last name spaces 
+select cst_lastname from Bronze.crm_cust_info
+where cst_lastname != trim(cst_lastname) 
+
+
+
+--trimmed data here 
+select cst_id,cst_key,trim(cst_firstname) as cst_firstname,trim(cst_lastname) as cst_last_name,cst_marital_status,cst_gndr,cst_create_date from
+(select *,ROW_NUMBER() over(partition by cst_id order by cst_create_date desc)as flag_last from bronze.crm_cust_info
+where cst_id is not null
+)t where flag_last = 1
+--non-trimmed data
+select cst_id,cst_key,cst_firstname,cst_lastname,cst_marital_status,cst_gndr,cst_create_date from
+(select *,ROW_NUMBER() over(partition by cst_id order by cst_create_date desc)as flag_last from bronze.crm_cust_info
+where cst_id is not null
+)t where flag_last = 1
+
+
+
+--marital status
+select distinct cst_marital_status from Bronze.crm_cust_info
+
+
+--SILVER LAYER FORMATION:
+
+
+--gender will be represented by full form of male and female and at the same time marital status will also be the change like married or single.
+--insert the data into new layer of silver which is transformed into the structured way.
+
+--Silver.crm_cust_info
+
+insert into Silver.crm_cust_info(
+	cst_id,
+	cst_key,
+	cst_firstname,
+	cst_lastname,
+	cst_marital_status,
+	cst_gndr,
+	cst_create_date)
+
+select cst_id,cst_key,trim(cst_firstname) as cst_firstname,trim(cst_lastname) as cst_lastname,
+case when upper(trim(cst_marital_status)) = 'M' then 'Married'
+     when upper(trim(cst_marital_status)) = 'S' then 'Single'
+	else 'n/a'
+end cst_marital_status,
+
+case when upper(trim(cst_gndr)) = 'M' then 'Male'
+     when upper(trim(cst_gndr)) = 'F' then 'Female'
+	else 'n/a'
+end cst_gndr,cst_create_date
+from
+(select *,ROW_NUMBER() over(partition by cst_id order by cst_id desc) as flag_last from bronze.crm_cust_info
+where cst_id is not null)t where flag_last = 1 
+--and cst_marital_status = 'M'
+
+
+print('---------------------------------------------------------------------------------------------------------------------------')
+
+--Silver.crm_prod_info
+
+select * from [Bronze].[crm_prd_info]
+
+--check nulls are there are not
+--Expectation no result
+select prd_id,count(*) from Bronze.crm_prd_info
+group by prd_id
+having count(*) > 1 or prd_id is null;
+
+
+--checking the next table 
+select prd_id,prd_key,substring(prd_key,1,5) as cat_id,prd_nm,prd_cost,prd_line,prd_start_dt,prd_end_dt from Bronze.crm_prd_info
+
+--select another table
+select distinct id from Bronze.erp_px_cat_g1v2
+
+--difference between cat_id and id is underscore and minus
+select prd_id,prd_key,REPLACE(substring(prd_key,1,5),'-','_') as cat_id,prd_nm,prd_cost,prd_line,prd_start_dt,prd_end_dt from Bronze.crm_prd_info
+where REPLACE(substring(prd_key,1,5),'-','_') not in (
+select id from Bronze.erp_px_cat_g1v2)
+
+
+--now checking with sales table
+select * from Bronze.crm_sales_details
+
+--now managing the both the tables of sales and crm_prd_info
+select prd_id,prd_key,replace(substring(prd_key,1,5),'-','_')as cat_key,SUBSTRING(prd_key,7,len(prd_key)) as prd_key,prd_nm,prd_cost,prd_line,
+prd_start_dt,prd_end_dt from Bronze.crm_prd_info
+where SUBSTRING(prd_key,7,len(prd_key)) in (select sls_prd_key from Bronze.crm_sales_details)
+
+--check unwanted spaces
+--expectation : no results
+select prd_nm from bronze.crm_prd_info
+where prd_nm != trim(prd_nm)
+
+
+--checking whether we have nulls or negative values
+--expectation : no results
+select prd_cost from bronze.crm_prd_info
+where prd_cost < 0 or prd_cost is null
+
+
+--now managing the both the tables of sales and crm_prd_info
+--prd_line
+select 
+			prd_id,
+			prd_key,
+			replace(substring(prd_key,1,5),'-','_')as cat_key,
+			SUBSTRING(prd_key,7,len(prd_key)) as prd_key,
+			prd_nm,
+			isnull(prd_cost,0) as prd_cost,
+			case 
+			when upper(trim(prd_line)) = 'M' then 'Mountain'
+			when upper(trim(prd_line)) = 'R' then 'Road'
+			when upper(trim(prd_line)) = 'S' then 'Other Sales'
+			when upper(trim(prd_line)) = 'T' then 'Touring'
+			else 'n/a'
+			end as prd_line,
+			prd_start_dt,
+			prd_end_dt 
+from Bronze.crm_prd_info
+where replace(substring(prd_key,1,5),'-','_') = 'AC_HE' --and prd_id in (212,213,214)
+
+--expectations no results
+select prd_cost from Bronze.crm_prd_info
+where prd_cost < 0 or prd_cost is null;
+
+--data standardization & consistency
+select distinct prd_line
+from Bronze.crm_prd_info
+
+--check for invalid date orders
+--now we have to replace the column values.
+select * from Bronze.crm_prd_info
+where prd_end_dt < prd_start_dt and prd_key
+
+
+--LEAD AND LAG ARE THE PROPERITIES USED HERE TO USE NEXT VALUE.
+--cleaning the data 
+select 
+		prd_id,
+		prd_key,
+		prd_nm,
+		prd_start_dt,
+		prd_end_dt,
+		lead(prd_start_dt) over (partition by prd_key order by prd_start_dt) as prd_end_dt_test
+from 
+Bronze.crm_prd_info
+where prd_key in ('AC-HE-HL-U509-R','AC-HE-HL-U509')
+
+
+--now we use the code to clean the data of the existing one
+select 
+			prd_id,
+			prd_key,
+			replace(substring(prd_key,1,5),'-','_')as cat_key,
+			SUBSTRING(prd_key,7,len(prd_key)) as prd_key,
+			prd_nm,
+			isnull(prd_cost,0) as prd_cost,
+			case 
+			when upper(trim(prd_line)) = 'M' then 'Mountain'
+			when upper(trim(prd_line)) = 'R' then 'Road'
+			when upper(trim(prd_line)) = 'S' then 'Other Sales'
+			when upper(trim(prd_line)) = 'T' then 'Touring'
+			else 'n/a'
+			end as prd_line,
+			cast(prd_start_dt as date) as prd_strt_dt,
+			cast(lead(prd_start_dt) over (partition by prd_key order by prd_start_dt)-1 as date) as prd_end_dt_test    --we will be displaying only the date not the time.
+from Bronze.crm_prd_info
+
+
+--now insert into the silver layer table
+insert into Silver.crm_prd_info(
+		prd_id,
+		cat_id,
+		prd_key,
+		prd_nm,
+		prd_cost,
+		prd_line,
+		prd_start_dt,
+		prd_end_dt
+)	
+select 
+			prd_id,
+			replace(substring(prd_key,1,5),'-','_')as cat_id,			--Extract category id
+			SUBSTRING(prd_key,7,len(prd_key)) as prd_key,				--Extract product key
+			prd_nm,
+			isnull(prd_cost,0) as prd_cost,
+			case 
+			when upper(trim(prd_line)) = 'M' then 'Mountain'
+			when upper(trim(prd_line)) = 'R' then 'Road'
+			when upper(trim(prd_line)) = 'S' then 'Other Sales'
+			when upper(trim(prd_line)) = 'T' then 'Touring'
+			else 'n/a'
+			end as prd_line,
+			cast(prd_start_dt as date) as prd_strt_dt,
+			cast(lead(prd_start_dt) over (partition by prd_key order by prd_start_dt)-1 as date) as prd_end_dt_test    --we will be displaying only the date not the time.
+from Bronze.crm_prd_info
+
+--checking the quality of the silver table
+--checks for nulls or duplicated in primary key
+--exceptation: no result
+select prd_id,count(*) from Silver.crm_prd_info
+group by prd_id
+having count(*) > 1 or prd_id is null;
+
+--checking unwanted spaces 
+--exceptation: no results
+select prd_nm from Silver.crm_prd_info
+where prd_nm != trim(prd_nm);
+
+--check for nulls or negative numbers
+--expectations: no results
+select prd_cost
+from Silver.crm_prd_info
+where prd_cost < 0 or prd_cost is null
+
+--data standardization & consistency
+select distinct prd_line from Silver.crm_prd_info
+
+--check for invalid data orders
+select * from Silver.crm_prd_info
+where prd_end_dt < prd_start_dt
+
+select	prd_id,
+		cat_id,
+		prd_key,
+		prd_nm,
+		prd_cost,
+		prd_line,
+		prd_start_dt,
+		prd_end_dt,
+		dwh_create_date
+from Silver.crm_prd_info
+print('-------------------------------------------------------------------------------------------------------------------------------')
+
+--Data Transformations for the Silver.crm_sales_details
+--Silver.crm_sales_details
+
+select
+		sls_ord_num,
+		sls_prd_key,
+		sls_cust_id,
+		sls_order_dt,
+		sls_ship_dt,
+		sls_due_dt,
+		sls_sales,
+		sls_quantity,
+		sls_price
+from Bronze.crm_sales_details
+
+
+--check for the Invalid dates 
+--whether they have zero or null values in the dates.
+select nullif(sls_order_dt,0) as sls_order_dt 
+from 
+Bronze.crm_sales_details
+where sls_order_dt <= 0
+
+--checking the length of the ord_date values 
+select nullif(sls_order_dt,0) from Bronze.crm_sales_details
+where sls_order_dt <= 0 or len(sls_order_dt) != 8
+
+--checking the boundary values 
+select nullif(sls_order_dt,0) as sls_order_dt from Bronze.crm_sales_details
+where sls_order_dt > 20500101 or sls_order_dt < 19000101;
+
+--transforming 
+select sls_ord_num,
+		sls_prd_key,
+		sls_cust_id,
+		case
+		when sls_order_dt <=0 or len(sls_order_dt) != 8 then null
+		else cast(cast(sls_order_dt as varchar) as Date)
+		end as sls_order_dt,
+		sls_ship_dt,
+		sls_due_dt,
+		sls_sales,
+		sls_quantity,
+		sls_price
+from Bronze.crm_sales_details
+
+--checking the boundary values of the sls_ship_dt
+select nullif(sls_ship_dt,0) as sls_ship_dt from Bronze.crm_sales_details
+where sls_ship_dt > 20500101 or sls_ship_dt < 19000101 or sls_ship_dt <= 0 or len(sls_ship_dt) != 8;
+
+--transforming the data
+select	sls_ord_num,
+		sls_prd_key,
+		sls_cust_id,
+		case 
+		when sls_order_dt = 0 or len(sls_order_dt) != 8 then null
+		else cast(cast sls_order_dt as varchar) as date)
+end as sls_ship_dt,
+case 
+		when sls_ship_dt = 0 or len(sls_ship_dt) != 8 then null
+		else cast(cast sls_ship_dt as varchar) as date)
+end as sls_ship_dt,
+sls_due_dt,
+sls_sales,
+sls_quantity,
+from Bronze.crm_sales_details
+
+
+--check the invalid dates in sls_due_dt
+select nullif(sls_due_dt,0)as sls_due_dt from Bronze.crm_sales_details
+where sls_due_dt <= 0 or len(sls_due_dt) != 8 or sls_due_dt > 20500101 or sls_due_dt < 19000101
+
+
+--transforming the data
+select 
+			sls_ord_num,
+			sls_prd_key,
+			sls_cust_id,
+			case 
+			when sls_order_dt <= 0 or len(sls_order_dt) != 8 then null
+			else cast(cast(sls_order_dt as varchar)as date)
+			end as sls_order_dt,
+			case
+			when sls_ship_dt < 0 or len(sls_ship_dt) != 8 then null
+			else cast(cast(sls_ship_dt as varchar)as date)
+			end as sls_ship_dt,
+			case
+			when sls_due_dt < 0 or len(sls_due_dt) != 8 then null
+			else cast(cast(sls_due_dt as varchar)as date)
+			end as sls_due_dt,
+			sls_sales,
+			sls_quantity,
+			sls_price
+from 
+Bronze.crm_sales_details
+
+--checking invalid orders date like order date and ship date
+select * from Bronze.crm_sales_details
+where sls_order_dt > sls_ship_dt or sls_order_dt > sls_due_dt;
+
+--checking data consistency : between sales , quantity and price
+-- sales = quantity * price
+-- values must not be null, zero or negative
+--where the values are not equal and having null values
+
+select		distinct sls_sales as old_sls_sales,
+			sls_quantity,
+			sls_price as old_sls_price,
+			
+			case when 
+			sls_sales is null or  sls_sales <= 0 or sls_sales != sls_quantity * ABS(sls_price)
+			then sls_quantity * ABS(sls_price)
+			else sls_sales 
+			end as sls_sales,
+			
+			case when sls_price is null or sls_price <= 0
+			then sls_sales / nullif(sls_quantity,0)
+			else sls_price
+			end as sls_price
+from Bronze.crm_sales_details
+where	sls_sales != sls_quantity * sls_price 
+		or sls_sales is null or sls_quantity is null or sls_price is null
+		or sls_sales <= 0 or sls_quantity <= 0 or sls_price <= 0
+order by sls_sales,sls_quantity,sls_price
+
+
+--transforming the data
+select 
+			sls_ord_num,
+			sls_prd_key,
+			sls_cust_id,
+			case 
+			when sls_order_dt <= 0 or len(sls_order_dt) != 8 then null
+			else cast(cast(sls_order_dt as varchar)as date)
+			end as sls_order_dt,
+			case
+			when sls_ship_dt < 0 or len(sls_ship_dt) != 8 then null
+			else cast(cast(sls_ship_dt as varchar)as date)
+			end as sls_ship_dt,
+			case
+			when sls_due_dt < 0 or len(sls_due_dt) != 8 then null
+			else cast(cast(sls_due_dt as varchar)as date)
+			end as sls_due_dt,
+			case when 
+			sls_sales is null or  sls_sales <= 0 or sls_sales != sls_quantity * ABS(sls_price)
+			then sls_quantity * ABS(sls_price)
+			else sls_sales 
+			end as sls_sales,
+			sls_quantity,
+			case when sls_price is null or sls_price <= 0
+			then sls_sales / nullif(sls_quantity,0)
+			else sls_price
+			end as sls_price
+from 
+Bronze.crm_sales_details
+
+
+--inserting into the silver layer after the transformation got succeed
+
+if object_id ('Silver.crm_sales_details','U') is not null
+	drop table Silver.crm_sales_details;
+create table Silver.crm_sales_details(
+		sls_ord_num nvarchar(50),
+		sls_prd_key nvarchar(50),
+		sls_cust_id int,
+		sls_order_dt date,
+		sls_ship_dt date,
+		sls_due_dt date,
+		sls_sales int,
+		sls_quantity int,
+		sls_price int,
+		dwh_create_date datetime2 default getdate()
+	);
+insert into Silver.crm_sales_details(
+			sls_ord_num,
+			sls_prd_key,
+			sls_cust_id,
+			sls_order_dt,
+			sls_ship_dt,
+			sls_due_dt,
+			sls_sales,
+			sls_quantity,
+			sls_price)
+select 
+			sls_ord_num,
+			sls_prd_key,
+			sls_cust_id,
+			case 
+			when sls_order_dt <= 0 or len(sls_order_dt) != 8 then null
+			else cast(cast(sls_order_dt as varchar)as date)
+			end as sls_order_dt,
+			case
+			when sls_ship_dt < 0 or len(sls_ship_dt) != 8 then null
+			else cast(cast(sls_ship_dt as varchar)as date)
+			end as sls_ship_dt,
+			case
+			when sls_due_dt < 0 or len(sls_due_dt) != 8 then null
+			else cast(cast(sls_due_dt as varchar)as date)
+			end as sls_due_dt,
+			case when 
+			sls_sales is null or  sls_sales <= 0 or sls_sales != sls_quantity * ABS(sls_price)
+			then sls_quantity * ABS(sls_price)
+			else sls_sales 
+			end as sls_sales,
+			sls_quantity,
+			case when sls_price is null or sls_price <= 0
+			then sls_sales / nullif(sls_quantity,0)
+			else sls_price
+			end as sls_price
+from 
+Bronze.crm_sales_details
+
+
+
+
+
+select * from Silver.crm_sales_details
+print('_______________________________________________________________________________________________________')
+
+
+
+--formation of silver layer for the erp_cust_az12
+
+select	cid,
+		case when cid like 'NAS%' then substring(cid,4,len(cid))
+		else cid
+		end cid,
+		bdate,	
+		gen 
+from Bronze.erp_cust_az12;
+
+select * from Silver.crm_cust_info;
+
+
+--checking whether the values are present in the crm cust info
+select cid,
+		case when cid like 'NAS%' then substring(cid,4,len(cid))
+		else cid
+		end as cid,
+		bdate,
+		gen
+		from Bronze.erp_cust_az12
+		where
+		cid not in (select distinct cst_key from Silver.crm_cust_info)
+
+
+
+--Transforming
+select 
+		case when cid like 'NAS%' then substring(cid,4,len(cid))
+		else cid
+		end as cid,
+		bdate,
+		gen
+		from Bronze.erp_cust_az12
+		where bdate < '1999-01-01';
+
+--future bdates identify out of range dates
+select case when cid like 'NAS%' then substring(cid,4,len(cid))
+else cid
+end as cid,
+case when bdate > getdate() then null
+else bdate
+end as bdate,
+gen
+from Bronze.erp_cust_az12
+
+--identify out of range dates
+select distinct bdate from Bronze.erp_cust_az12
+where bdate < '1924-01-01' or bdate > getdate()
+
+
+--data standardization & consistency
+select distinct gen,
+case
+when upper(trim(gen)) in ('F','Female') then 'Female'
+when upper(trim(gen)) in ('M','Male') then 'Male'
+else 'n/a'
+end as gen
+from Bronze.erp_cust_az12;
+
+--silver layer transformation
+if object_id ('silver.erp_cust_az12','U') is not null
+	drop table silver.erp_cust_az12;
+--CREATES A TABLE
+create table silver.erp_cust_az12 (
+	cid nvarchar(50),
+	bdate date,
+	gen nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+insert into Silver.erp_cust_az12(
+		cid,
+		bdate,
+		gen)
+select 
+		case 
+			when cid like 'NAS%' then substring(cid,4,len(cid))
+			else cid
+		end as cid,
+		case 
+			when bdate > getdate() then null
+			else bdate
+		end as bdate,
+		case
+			when upper(trim(gen)) in ('F','Female') then 'Female'
+			when upper(trim(gen)) in ('M','Male') then 'Male'
+			else 'n/a'
+		end as gen
+from Bronze.erp_cust_az12
+
+select distinct gen from Bronze.erp_cust_az12;
+select count(*) from Bronze.erp_cust_az12;
+select * from Silver.erp_cust_az12
+
+
+--identifying Out-of-range Dates
+select distinct bdate
+from Silver.erp_cust_az12
+where bdate < '1924-01-01' or bdate > getdate()
+
+
+select * from Silver.erp_cust_az12
+
+
+
+print('________________________________________________________________________________________________________')
+
+
+
+--build silver layer clean & load erp_loc_a101
+--transformation is working.
+select replace(cid,'-','') as cid,cntry from Bronze.erp_loc_a101
+where replace(cid,'-','')not in (
+select cst_key from Silver.crm_cust_info)
+
+select * from Bronze.erp_loc_a101
+
+
+--Data Satandardization & Consistency
+select distinct cntry from Bronze.erp_loc_a101;
+
+
+
+select distinct cntry as old_cntry,
+		case
+		when trim(cntry) ='DE' then 'Germany'
+		when trim(cntry) in ('US','USA') then 'United States'
+		when trim(cntry) = ' ' or cntry is null then 'n/a'
+		else trim(cntry)
+end as cntry
+from Bronze.erp_loc_a101
+order by cntry
+
+
+--creating the silver layer
+if object_id ('Bronze.erp_loc_a101','U') is not null
+	drop table Bronze.erp_loc_a101;
+--CREATES A TABLE
+create table Bronze.erp_loc_a101 (
+	cid nvarchar(50),
+	cntry nvarchar(50)
+);
+insert into Silver.erp_loc_a101
+				(
+				cid,
+				cntry
+				)
+select replace(cid,'-','') as cid,
+		case
+		when trim(cntry) ='DE' then 'Germany'
+		when trim(cntry) in ('US','USA') then 'United States'
+		when trim(cntry) = ' ' or cntry is null then 'n/a'
+		else trim(cntry)
+end as cntry			--normalize and handle missing or blank country codes
+from Bronze.erp_loc_a101
+
+
+select * from Silver.erp_loc_a101
+
+
+
+print('______________________________________________________________________________________________________________')
+
+--build silver layer and clean the data of erp_px_cat_g1v2
+
+
+select	id,
+		cat,
+		subcat,
+		maintainence 
+from Bronze.erp_px_cat_g1v2
+
+
+--unwanted spaces removing from the bronze.erp_px_cat_g1v2
+select * from Bronze.erp_px_cat_g1v2
+where cat != trim(cat) or subcat != trim(subcat)
+
+select * from Silver.crm_prd_info
+
+
+--Data standardization and consistency
+select distinct cat
+from Bronze.erp_px_cat_g1v2
+select distinct subcat
+from Bronze.erp_px_cat_g1v2
+select distinct maintainence
+from Bronze.erp_px_cat_g1v2
+
+
+
+--inserting into the silver layer of Silver.erp_px_cat_g1v2
+if object_id ('silver.erp_px_cat_g1v2','U') is not null
+	drop table silver.erp_px_cat_g1v2;
+--CREATES A TABLE
+create table silver.erp_px_cat_g1v2 (
+	id nvarchar(50),
+	cat nvarchar(50),
+	subcat nvarchar(50),
+	maintainence nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+insert into Silver.erp_px_cat_g1v2
+(			id,
+			cat,
+			subcat,
+			maintainence)
+select	id,
+		cat,
+		subcat,
+		maintainence 
+from Bronze.erp_px_cat_g1v2
+
+select * from silver.erp_px_cat_g1v2
+
+
+
+
+
+
+
+--inserting six tables of data
+
+--Silver.crm_cust_info
+
+if OBJECT_ID ('silver.crm_cust_info','U') is not null
+	drop table silver.crm_cust_info;
+
+create table silver.crm_cust_info (
+	cst_id int,
+	cst_key nvarchar(50),
+	cst_firstname nvarchar(50),
+	cst_lastname nvarchar(50),
+	cst_marital_status nvarchar(10),
+	cst_gndr nvarchar(10),
+	cst_create_date date,
+	dwh_create_date Datetime2 default getdate()
+);
+
+print'>>Truncating Table: silver.crm_cust_info'
+truncate table Silver.crm_cust_info;
+print '>>Inserting Data Into: silver.crm_cust_info'
+insert into Silver.crm_cust_info(
+	cst_id,
+	cst_key,
+	cst_firstname,
+	cst_lastname,
+	cst_marital_status,
+	cst_gndr,
+	cst_create_date)
+
+select 
+		cst_id,
+		cst_key,
+		trim(cst_firstname) as cst_firstname,
+		trim(cst_lastname) as cst_lastname,
+		case 
+			when upper(trim(cst_marital_status)) = 'M' then 'Married'
+			when upper(trim(cst_marital_status)) = 'S' then 'Single'
+			else 'n/a'
+		end as cst_marital_status,
+		case 
+			when upper(trim(cst_gndr)) = 'M' then 'Male'
+			when upper(trim(cst_gndr)) = 'F' then 'Female'
+			else 'n/a'
+		end as cst_gndr,cst_create_date
+from ( 
+	select 
+		*,
+		ROW_NUMBER() over(partition by cst_id order by cst_id desc) as flag_last 
+	from 
+		bronze.crm_cust_info
+	where cst_id is not null)t where flag_last = 1 
+
+print('-------------------------------------------------------------------------------')
+
+--Silver.crm_prd_info
+
+if OBJECT_ID ('silver.crm_prd_info','U') is not null
+	drop table silver.crm_prd_info;
+--CREATE A TABLE
+create table silver.crm_prd_info (
+	prd_id int,
+	cat_id nvarchar(50),
+	prd_key nvarchar(50),
+	prd_nm nvarchar(50),
+	prd_cost int,
+	prd_line nvarchar(50),
+	prd_start_dt date,
+	prd_end_dt date,
+	dwh_create_date Datetime2 default getdate()
+);
+
+print'>>Truncating Table: Silver.crm_prd_info'
+truncate table Silver.crm_prd_info;
+print '>>Inserting Data Into: Silver.crm_prd_info'
+insert into Silver.crm_prd_info(
+		prd_id,
+		cat_id,
+		prd_key,
+		prd_nm,
+		prd_cost,
+		prd_line,
+		prd_start_dt,
+		prd_end_dt
+)	
+select 
+		prd_id,
+		replace(substring(prd_key,1,5),'-','_')as cat_id,			--Extract category id
+		SUBSTRING(prd_key,7,len(prd_key)) as prd_key,				--Extract product key
+		prd_nm,
+		isnull(prd_cost,0) as prd_cost,
+		case 
+			when upper(trim(prd_line)) = 'M' then 'Mountain'
+			when upper(trim(prd_line)) = 'R' then 'Road'
+			when upper(trim(prd_line)) = 'S' then 'Other Sales'
+			when upper(trim(prd_line)) = 'T' then 'Touring'
+			else 'n/a'
+		end as prd_line,
+		cast(prd_start_dt as date) as prd_strt_dt,
+		cast(lead(prd_start_dt) over (partition by prd_key order by prd_start_dt)-1 as date) as prd_end_dt_test    --we will be displaying only the date not the time.
+from 
+Bronze.crm_prd_info
+
+print('-------------------------------------------------------------------------------')
+
+--Silver.crm_sales_details
+
+if object_id ('Silver.crm_sales_details','U') is not null
+	drop table Silver.crm_sales_details;
+create table Silver.crm_sales_details(
+		sls_ord_num nvarchar(50),
+		sls_prd_key nvarchar(50),
+		sls_cust_id int,
+		sls_order_dt date,
+		sls_ship_dt date,
+		sls_due_dt date,
+		sls_sales int,
+		sls_quantity int,
+		sls_price int,
+		dwh_create_date datetime2 default getdate()
+	);
+
+print'>>Truncating Table: Silver.crm_sales_details'
+truncate table Silver.crm_sales_details;
+print '>>Inserting Data Into: Silver.crm_sales_details'
+insert into Silver.crm_sales_details(
+			sls_ord_num,
+			sls_prd_key,
+			sls_cust_id,
+			sls_order_dt,
+			sls_ship_dt,
+			sls_due_dt,
+			sls_sales,
+			sls_quantity,
+			sls_price)
+select 
+			sls_ord_num,
+			sls_prd_key,
+			sls_cust_id,
+			case 
+				when sls_order_dt <= 0 or len(sls_order_dt) != 8 then null
+				else cast(cast(sls_order_dt as varchar)as date)
+			end as sls_order_dt,
+			case
+				when sls_ship_dt < 0 or len(sls_ship_dt) != 8 then null
+				else cast(cast(sls_ship_dt as varchar)as date)
+			end as sls_ship_dt,
+			case
+				when sls_due_dt < 0 or len(sls_due_dt) != 8 then null
+				else cast(cast(sls_due_dt as varchar)as date)
+			end as sls_due_dt,
+			case 
+				when sls_sales is null or  sls_sales <= 0 or sls_sales != sls_quantity * ABS(sls_price)
+				then sls_quantity * ABS(sls_price)
+				else sls_sales 
+			end as sls_sales,
+			sls_quantity,
+			case 
+				when sls_price is null or sls_price <= 0 then sls_sales / nullif(sls_quantity,0)
+				else sls_price
+			end as sls_price
+from 
+Bronze.crm_sales_details
+
+print('-------------------------------------------------------------------------------')
+
+--Silver.erp_cust_az12
+
+if object_id ('Silver.erp_cust_az12','U') is not null
+	drop table Silver.erp_cust_az12;
+--CREATES A TABLE
+create table Silver.erp_cust_az12 (
+	cid nvarchar(50),
+	bdate date,
+	gen nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+print'>>Truncating Table: Silver.erp_cust_az12'
+truncate table Silver.erp_cust_az12;
+print '>>Inserting Data Into: Silver.erp_cust_az12'
+insert into Silver.erp_cust_az12(
+		cid,
+		bdate,
+		gen
+		)
+select 
+		case 
+			when cid like 'NAS%' then substring(cid,4,len(cid))
+			else cid
+		end as cid,
+		case 
+			when bdate > getdate() then null
+			else bdate
+		end as bdate,
+		case
+			when upper(trim(gen)) in ('F','Female') then 'Female'
+			when upper(trim(gen)) in ('M','Male') then 'Male'
+			else 'n/a'
+		end as gen
+from Bronze.erp_cust_az12
+
+print('-------------------------------------------------------------------------------')
+
+--Silver.erp_loc_a101
+
+if object_id ('silver.erp_loc_a101','U') is not null
+	drop table Silver.erp_loc_a101;
+--CREATES A TABLE
+create table Silver.erp_loc_a101 (
+	cid nvarchar(50),
+	cntry nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+print'>>Truncating Table: Silver.erp_loc_a101'
+truncate table Silver.erp_loc_a101;
+print '>>Inserting Data Into: Silver.erp_loc_a101'
+insert into Silver.erp_loc_a101
+				(
+				cid,
+				cntry
+				)
+select replace(cid,'-','') as cid,
+		case
+		when trim(cntry) ='DE' then 'Germany'
+		when trim(cntry) in ('US','USA') then 'United States'
+		when trim(cntry) = ' ' or cntry is null then 'n/a'
+		else trim(cntry)
+end as cntry			--normalize and handle missing or blank country codes
+from Bronze.erp_loc_a101
+
+
+print('-------------------------------------------------------------------------------')
+
+--Silver.erp_px_cat_g1v2
+if object_id ('silver.erp_px_cat_g1v2','U') is not null
+	drop table silver.erp_px_cat_g1v2;
+--CREATES A TABLE
+create table silver.erp_px_cat_g1v2 (
+	id nvarchar(50),
+	cat nvarchar(50),
+	subcat nvarchar(50),
+	maintainence nvarchar(50),
+	dwh_create_date Datetime2 default getdate()
+);
+
+print'>>Truncating Table: Silver.erp_px_cat_g1v2'
+truncate table Silver.erp_px_cat_g1v2;
+print '>>Inserting Data Into: Silver.erp_px_cat_g1v2'
+insert into Silver.erp_px_cat_g1v2
+(			id,
+			cat,
+			subcat,
+			maintainence)
+select	id,
+		cat,
+		subcat,
+		maintainence 
+from Bronze.erp_px_cat_g1v2
+
+
+
+print('-------------------------------------------------------------------------------')
+
+truncate table Silver.crm_cust_info;
+select * from Silver.crm_cust_info;
+truncate table Silver.crm_prd_info;
+select * from Silver.crm_prd_info;
+truncate table Silver.crm_sales_details;
+select * from Silver.crm_sales_details;
+truncate table Silver.erp_cust_az12;
+select * from Silver.erp_cust_az12;
+truncate table Silver.erp_loc_a101;
+select * from Silver.erp_loc_a101;
+truncate table Silver.erp_px_cat_g1v2;
+select * from Silver.erp_px_cat_g1v2;
+
+print('________________________________________________________________________________________________'_
+select count(*) from Silver.crm_cust_info;
+select count(*) from Bronze.crm_cust_info;
+select count(*) from Silver.crm_prd_info;
+select count(*) from Bronze.crm_prd_info;
+select count(*) from Silver.crm_sales_details;
+select count(*) from Bronze.crm_sales_details;
+select count(*) from Silver.erp_cust_az12;
+select count(*) from Bronze.erp_cust_az12;
+select count(*) from Silver.erp_loc_a101;
+select count(*) from Bronze.erp_loc_a101;
+select count(*) from Silver.erp_px_cat_g1v2;
+select count(*) from Bronze.erp_px_cat_g1v2;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--stored procedure
+
+create or alter procedure Silver.load_silver as
+begin
+	DECLARE @start_time DATETIME, @end_time DATETIME,@batch_start_time DATETIME, @batch_end_time DATETIME;
+	BEGIN TRY
+		--truncate the table  which remains the structure
+		--INSERTING THE DATA WITH A PROPER FORMAT AND DATA WITHOUT THE NUMBER OF TIMES THE DATA DUPLICATED
+		--BATCH TIME FORMATION
+		SET @batch_start_time = GETDATE();
+		print'=========================================================================';
+		print'Loading Silver Layer';
+		print'=========================================================================';
+
+		print '------------------------------------------------------------------------';
+		print 'Loading CRM Table';
+		print '------------------------------------------------------------------------';
+
+		--Loading silver.crm_cust_info
+		set @start_time = GETDATE();
+		print'>>Truncating Table: silver.crm_cust_info'
+		truncate table Silver.crm_cust_info;
+		print '>>Inserting Data Into: silver.crm_cust_info'
+		insert into Silver.crm_cust_info(
+			cst_id,
+			cst_key,
+			cst_firstname,
+			cst_lastname,
+			cst_marital_status,
+			cst_gndr,
+			cst_create_date)
+
+		select 
+				cst_id,
+				cst_key,
+				trim(cst_firstname) as cst_firstname,
+				trim(cst_lastname) as cst_lastname,
+				case 
+					when upper(trim(cst_marital_status)) = 'M' then 'Married'
+					when upper(trim(cst_marital_status)) = 'S' then 'Single'
+					else 'n/a'
+				end as cst_marital_status,
+				case 
+					when upper(trim(cst_gndr)) = 'M' then 'Male'
+					when upper(trim(cst_gndr)) = 'F' then 'Female'
+					else 'n/a'
+				end as cst_gndr,cst_create_date
+		from ( 
+			select 
+				*,
+				ROW_NUMBER() over(partition by cst_id order by cst_id desc) as flag_last 
+			from 
+				bronze.crm_cust_info
+			where cst_id is not null
+			) t 
+			where flag_last = 1 
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		print('-------------------------------------------------------------------------------')
+
+		--Silver.crm_prd_info
+
+		/*if OBJECT_ID ('silver.crm_prd_info','U') is not null
+			drop table silver.crm_prd_info;
+		--CREATE A TABLE
+		create table silver.crm_prd_info (
+			prd_id int,
+			cat_id nvarchar(50),
+			prd_key nvarchar(50),
+			prd_nm nvarchar(50),
+			prd_cost int,
+			prd_line nvarchar(50),
+			prd_start_dt date,
+			prd_end_dt date,
+			dwh_create_date Datetime2 default getdate()
+		);*/
+		set @start_time = GETDATE();
+		print'>>Truncating Table: Silver.crm_prd_info'
+		truncate table Silver.crm_prd_info;
+		print '>>Inserting Data Into: Silver.crm_prd_info'
+		insert into Silver.crm_prd_info(
+				prd_id,
+				cat_id,
+				prd_key,
+				prd_nm,
+				prd_cost,
+				prd_line,
+				prd_start_dt,
+				prd_end_dt
+		)	
+		select 
+				prd_id,
+				replace(substring(prd_key,1,5),'-','_')as cat_id,			--Extract category id
+				SUBSTRING(prd_key,7,len(prd_key)) as prd_key,				--Extract product key
+				prd_nm,
+				isnull(prd_cost,0) as prd_cost,
+				case 
+					when upper(trim(prd_line)) = 'M' then 'Mountain'
+					when upper(trim(prd_line)) = 'R' then 'Road'
+					when upper(trim(prd_line)) = 'S' then 'Other Sales'
+					when upper(trim(prd_line)) = 'T' then 'Touring'
+					else 'n/a'
+				end as prd_line,
+				cast(prd_start_dt as date) as prd_strt_dt,
+				cast(lead(prd_start_dt) over (partition by prd_key order by prd_start_dt)-1 as date) as prd_end_dt_test    --we will be displaying only the date not the time.
+		from 
+		Bronze.crm_prd_info
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+
+		print('-------------------------------------------------------------------------------')
+
+		--Silver.crm_sales_details
+		/*
+		if object_id ('Silver.crm_sales_details','U') is not null
+			drop table Silver.crm_sales_details;
+		create table Silver.crm_sales_details(
+				sls_ord_num nvarchar(50),
+				sls_prd_key nvarchar(50),
+				sls_cust_id int,
+				sls_order_dt date,
+				sls_ship_dt date,
+				sls_due_dt date,
+				sls_sales int,
+				sls_quantity int,
+				sls_price int,
+				dwh_create_date datetime2 default getdate()
+			);
+			*/
+		set @start_time = GETDATE();
+		print'>>Truncating Table: Silver.crm_sales_details'
+		truncate table Silver.crm_sales_details;
+		print '>>Inserting Data Into: Silver.crm_sales_details'
+		insert into Silver.crm_sales_details(
+					sls_ord_num,
+					sls_prd_key,
+					sls_cust_id,
+					sls_order_dt,
+					sls_ship_dt,
+					sls_due_dt,
+					sls_sales,
+					sls_quantity,
+					sls_price)
+		select 
+					sls_ord_num,
+					sls_prd_key,
+					sls_cust_id,
+					case 
+						when sls_order_dt <= 0 or len(sls_order_dt) != 8 then null
+						else cast(cast(sls_order_dt as varchar)as date)
+					end as sls_order_dt,
+					case
+						when sls_ship_dt < 0 or len(sls_ship_dt) != 8 then null
+						else cast(cast(sls_ship_dt as varchar)as date)
+					end as sls_ship_dt,
+					case
+						when sls_due_dt < 0 or len(sls_due_dt) != 8 then null
+						else cast(cast(sls_due_dt as varchar)as date)
+					end as sls_due_dt,
+					case 
+						when sls_sales is null or  sls_sales <= 0 or sls_sales != sls_quantity * ABS(sls_price)
+						then sls_quantity * ABS(sls_price)
+						else sls_sales 
+					end as sls_sales,
+					sls_quantity,
+					case 
+						when sls_price is null or sls_price <= 0 then sls_sales / nullif(sls_quantity,0)
+						else sls_price
+					end as sls_price
+		from 
+		Bronze.crm_sales_details
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+		print('-------------------------------------------------------------------------------')
+
+		--Silver.erp_cust_az12
+		
+		/*
+		if object_id ('Silver.erp_cust_az12','U') is not null
+			drop table Silver.erp_cust_az12;
+		--CREATES A TABLE
+		create table Silver.erp_cust_az12 (
+			cid nvarchar(50),
+			bdate date,
+			gen nvarchar(50),
+			dwh_create_date Datetime2 default getdate()
+		);
+		*/
+		set @start_time = GETDATE();
+		print'>>Truncating Table: Silver.erp_cust_az12'
+		truncate table Silver.erp_cust_az12;
+		print '>>Inserting Data Into: Silver.erp_cust_az12'
+		insert into Silver.erp_cust_az12(
+				cid,
+				bdate,
+				gen
+				)
+		select 
+				case 
+					when cid like 'NAS%' then substring(cid,4,len(cid))
+					else cid
+				end as cid,
+				case 
+					when bdate > getdate() then null
+					else bdate
+				end as bdate,
+				case
+					when upper(trim(gen)) in ('F','Female') then 'Female'
+					when upper(trim(gen)) in ('M','Male') then 'Male'
+					else 'n/a'
+				end as gen
+		from Bronze.erp_cust_az12
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+
+		print('-------------------------------------------------------------------------------')
+
+		--Silver.erp_loc_a101
+		/*
+		if object_id ('silver.erp_loc_a101','U') is not null
+			drop table Silver.erp_loc_a101;
+		--CREATES A TABLE
+		create table Silver.erp_loc_a101 (
+			cid nvarchar(50),
+			cntry nvarchar(50),
+			dwh_create_date Datetime2 default getdate()
+		);
+		*/
+		set @start_time = getdate();
+		print'>>Truncating Table: Silver.erp_loc_a101'
+		truncate table Silver.erp_loc_a101;
+		print '>>Inserting Data Into: Silver.erp_loc_a101'
+		insert into Silver.erp_loc_a101
+						(
+						cid,
+						cntry
+						)
+		select replace(cid,'-','') as cid,
+				case
+				when trim(cntry) ='DE' then 'Germany'
+				when trim(cntry) in ('US','USA') then 'United States'
+				when trim(cntry) = ' ' or cntry is null then 'n/a'
+				else trim(cntry)
+		end as cntry			--normalize and handle missing or blank country codes
+		from Bronze.erp_loc_a101
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+
+
+		print('-------------------------------------------------------------------------------')
+
+		--Silver.erp_px_cat_g1v2
+		/*if object_id ('silver.erp_px_cat_g1v2','U') is not null
+			drop table silver.erp_px_cat_g1v2;
+		--CREATES A TABLE
+		create table silver.erp_px_cat_g1v2 (
+			id nvarchar(50),
+			cat nvarchar(50),
+			subcat nvarchar(50),
+			maintainence nvarchar(50),
+			dwh_create_date Datetime2 default getdate()
+		);
+		*/
+		set @start_time = getdate();
+		print'>>Truncating Table: Silver.erp_px_cat_g1v2'
+		truncate table Silver.erp_px_cat_g1v2;
+		print '>>Inserting Data Into: Silver.erp_px_cat_g1v2'
+		insert into Silver.erp_px_cat_g1v2
+		(			id,
+					cat,
+					subcat,
+					maintainence)
+		select	id,
+				cat,
+				subcat,
+				maintainence 
+		from Bronze.erp_px_cat_g1v2
+		SET @end_time = GETDATE();
+		PRINT '>> LOAD DURATION : '+ CAST(DATEDIFF(SECOND,@start_time, @end_time) AS NVARCHAR) + ' SECONDS';
+		PRINT '--------------------------------------------------------------------------';
+	end try
+	Begin catch
+		PRINT '=========================================================================================='
+		PRINT 'ERROR OCCURED DURING LOADING BRONZE LAYER '
+		PRINT 'Error Message'+ ERROR_MESSAGE();
+		PRINT 'Error Message'+ CAST (ERROR_NUMBER() AS NVARCHAR);
+		PRINT 'Error Message'+ cast (ERROR_STATE() AS NVARCHAR);
+		PRINT '=========================================================================================='
+	end catch
+end
+
+
+exec Silver.load_silver
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+===============================================================================
+Quality Checks
+===============================================================================
+Script Purpose:
+    This script performs various quality checks for data consistency, accuracy, 
+    and standardization across the 'silver' layer. It includes checks for:
+    - Null or duplicate primary keys.
+    - Unwanted spaces in string fields.
+    - Data standardization and consistency.
+    - Invalid date ranges and orders.
+    - Data consistency between related fields.
+
+Usage Notes:
+    - Run these checks after data loading Silver Layer.
+    - Investigate and resolve any discrepancies found during the checks.
+===============================================================================
+*/
+
+-- ====================================================================
+-- Checking 'silver.crm_cust_info'
+-- ====================================================================
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    cst_id,
+    COUNT(*) 
+FROM silver.crm_cust_info
+GROUP BY cst_id
+HAVING COUNT(*) > 1 OR cst_id IS NULL;
+
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    cst_key 
+FROM silver.crm_cust_info
+WHERE cst_key != TRIM(cst_key);
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cst_marital_status 
+FROM silver.crm_cust_info;
+
+-- ====================================================================
+-- Checking 'silver.crm_prd_info'
+-- ====================================================================
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    prd_id,
+    COUNT(*) 
+FROM silver.crm_prd_info
+GROUP BY prd_id
+HAVING COUNT(*) > 1 OR prd_id IS NULL;
+
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    prd_nm 
+FROM silver.crm_prd_info
+WHERE prd_nm != TRIM(prd_nm);
+
+-- Check for NULLs or Negative Values in Cost
+-- Expectation: No Results
+SELECT 
+    prd_cost 
+FROM silver.crm_prd_info
+WHERE prd_cost < 0 OR prd_cost IS NULL;
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    prd_line 
+FROM silver.crm_prd_info;
+
+-- Check for Invalid Date Orders (Start Date > End Date)
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.crm_prd_info
+WHERE prd_end_dt < prd_start_dt;
+
+-- ====================================================================
+-- Checking 'silver.crm_sales_details'
+-- ====================================================================
+-- Check for Invalid Dates
+-- Expectation: No Invalid Dates
+SELECT 
+    NULLIF(sls_due_dt, 0) AS sls_due_dt 
+FROM bronze.crm_sales_details
+WHERE sls_due_dt <= 0 
+    OR LEN(sls_due_dt) != 8 
+    OR sls_due_dt > 20500101 
+    OR sls_due_dt < 19000101;
+
+-- Check for Invalid Date Orders (Order Date > Shipping/Due Dates)
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.crm_sales_details
+WHERE sls_order_dt > sls_ship_dt 
+   OR sls_order_dt > sls_due_dt;
+
+-- Check Data Consistency: Sales = Quantity * Price
+-- Expectation: No Results
+SELECT DISTINCT 
+    sls_sales,
+    sls_quantity,
+    sls_price 
+FROM silver.crm_sales_details
+WHERE sls_sales != sls_quantity * sls_price
+   OR sls_sales IS NULL 
+   OR sls_quantity IS NULL 
+   OR sls_price IS NULL
+   OR sls_sales <= 0 
+   OR sls_quantity <= 0 
+   OR sls_price <= 0
+ORDER BY sls_sales, sls_quantity, sls_price;
+
+-- ====================================================================
+-- Checking 'silver.erp_cust_az12'
+-- ====================================================================
+-- Identify Out-of-Range Dates
+-- Expectation: Birthdates between 1924-01-01 and Today
+SELECT DISTINCT 
+    bdate 
+FROM silver.erp_cust_az12
+WHERE bdate < '1924-01-01' 
+   OR bdate > GETDATE();
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    gen 
+FROM silver.erp_cust_az12;
+
+-- ====================================================================
+-- Checking 'silver.erp_loc_a101'
+-- ====================================================================
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cntry 
+FROM silver.erp_loc_a101
+ORDER BY cntry;
+
+-- ====================================================================
+-- Checking 'silver.erp_px_cat_g1v2'
+-- ====================================================================
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.erp_px_cat_g1v2
+WHERE cat != TRIM(cat) 
+   OR subcat != TRIM(subcat) 
+   OR maintainence != TRIM(maintainence);
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    maintainence
+FROM silver.erp_px_cat_g1v2;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--Gold layer is a virtual layer
+
+create view gold.dim_customers as 
+select	ROW_NUMBER() over(order by cst_id) as customer_key,
+		ci.cst_id as customer_id,
+		ci.cst_key as customer_number,
+		ci.cst_firstname as first_name,
+		ci.cst_lastname as last_name,
+		la.cntry as country,
+		ci.cst_marital_status as marital_status,
+		case 
+		when ci.cst_gndr != 'n/a' then ci.cst_gndr
+		else coalesce(ca.gen, 'n/a')
+		end as new_gen,
+		ca.bdate as birthdate,
+		ci.cst_create_date as create_date
+from Silver.crm_cust_info as ci
+left join Silver.erp_cust_az12 as ca
+on ci.cst_key = ca.cid
+left join Silver.erp_loc_a101 la
+on ci.cst_key = la.cid
+--order by 1,2
+
+--Quality checks
+select distinct new_gen from gold.dim_customers
+
+create view gold.dim_products as 
+select 
+	row_number() over(order by pn.prd_start_dt,pn.prd_key) as product_key,
+	pn.prd_id as product_id,
+	pn.prd_key as product_number,
+	pn.prd_nm as product_name, 
+	pn.cat_id as category_id,
+	pc.cat as category,
+	pc.subcat as subcategory,
+	pc.maintainence,
+	pn.prd_cost as cost,
+	pn.prd_line as product_line,
+	pn.prd_start_dt as start_date
+from 
+Silver.crm_prd_info pn
+left join Silver.erp_px_cat_g1v2 pc
+on pn.cat_id = pc.id
+where prd_end_dt is null    --filter out all historical data
+
+
+
+--sales_crm
+create view gold.fact_sales as 
+select 
+sd.sls_ord_num as order_number,
+pr.product_key,
+cu.customer_key,
+sd.sls_order_dt as order_date,
+sd.sls_ship_dt as shipping_date,
+sd.sls_due_dt as due_date,
+sd.sls_sales as sales_amount,
+sd.sls_quantity as quantity,
+sd.sls_price as price
+from silver.crm_sales_details sd
+left join gold.dim_products pr
+on sd.sls_prd_key = pr.product_number
+left join gold.dim_customers cu
+on sd.sls_cust_id = cu.customer_id
+
+
+--foreign key Integrity (dimensions)
+select * from Gold.fact_sales f
+left join gold.dim_customers c
+on c.customer_key = f.customer_key
+left join gold.dim_products p
+on p.product_key = f.product_key
+where p.product_key is null
+
+
+
+
+
+
+
+
+
+
+select * from Silver.erp_px_cat_g1v2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
